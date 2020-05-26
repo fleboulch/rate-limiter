@@ -12,28 +12,28 @@ import java.util.Set;
 @Service
 public class RateLimiterService {
 
-    private static Duration INTERVAL_DURATION;
-    private static int NB_MAX_REQUESTS_PER_INTERVAL;
+    private final Duration intervalDuration;
+    private final int nbMaxRequestsPerInterval;
 
-    private static Set<Instant> DATE_ENDPOINT_CALLS = new HashSet<>();
+    private final Set<Instant> dateEndpointCalls = new HashSet<>();
 
-    private Clock clock;
+    private final Clock clock;
 
     public RateLimiterService(RateLimiterProperties rateLimiterProperties, Clock clock) {
-        INTERVAL_DURATION = rateLimiterProperties.interval();
-        NB_MAX_REQUESTS_PER_INTERVAL = rateLimiterProperties.maxRequest();
+        intervalDuration = rateLimiterProperties.interval();
+        nbMaxRequestsPerInterval = rateLimiterProperties.maxRequest();
         this.clock = clock;
     }
 
     public void checkRate() {
         Instant now = Instant.now(clock);
-        DATE_ENDPOINT_CALLS.add(now);
+        dateEndpointCalls.add(now);
 
-        long numberOfRequestsInInterval = DATE_ENDPOINT_CALLS.stream()
+        long numberOfRequestsInInterval = dateEndpointCalls.stream()
                 .filter(endpointDateCalls -> isCallInInterval(endpointDateCalls, now))
                 .count();
 
-        if (numberOfRequestsInInterval > NB_MAX_REQUESTS_PER_INTERVAL) {
+        if (numberOfRequestsInInterval > nbMaxRequestsPerInterval) {
             throw new MaxRequestNumberReachedException("Number of requests exceeded!");
         }
 
@@ -41,7 +41,7 @@ public class RateLimiterService {
 
     private boolean isCallInInterval(Instant endpointDateCall, Instant now) {
 
-        return endpointDateCall.isAfter(now.minus(INTERVAL_DURATION)) &&
+        return endpointDateCall.isAfter(now.minus(intervalDuration)) &&
                 endpointDateCall.isBefore(now.plusNanos(1));
     }
 }
