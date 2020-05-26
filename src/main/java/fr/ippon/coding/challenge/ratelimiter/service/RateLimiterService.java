@@ -26,21 +26,22 @@ public class RateLimiterService {
     }
 
     public void checkRate() {
+        Instant now = Instant.now(clock);
+        DATE_ENDPOINT_CALLS.add(now);
+
         long numberOfRequestsInInterval = DATE_ENDPOINT_CALLS.stream()
-                .filter(this::isCallInInterval)
+                .filter(endpointDateCalls -> isCallInInterval(endpointDateCalls, now))
                 .count();
 
-        if (numberOfRequestsInInterval >= NB_MAX_REQUESTS_PER_INTERVAL) {
+        if (numberOfRequestsInInterval > NB_MAX_REQUESTS_PER_INTERVAL) {
             throw new MaxRequestNumberReachedException("Number of requests exceeded!");
         }
-        DATE_ENDPOINT_CALLS.add(Instant.now(clock));
 
     }
 
-    private boolean isCallInInterval(Instant endpointsDateCall) {
-        Instant now = Instant.now(clock);
+    private boolean isCallInInterval(Instant endpointDateCall, Instant now) {
 
-        return endpointsDateCall.isAfter(now.minus(INTERVAL_DURATION)) &&
-                endpointsDateCall.isBefore(now);
+        return endpointDateCall.isAfter(now.minus(INTERVAL_DURATION)) &&
+                endpointDateCall.isBefore(now.plusNanos(1));
     }
 }
